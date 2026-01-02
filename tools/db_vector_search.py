@@ -102,6 +102,18 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 
                 logger.info(f"🔍 [VECTOR SEARCH] Encontrados {len(results)} resultados")
                 
+                # LOG detalhado para debug de relevância
+                if results:
+                    import re
+                    for i, r in enumerate(results[:5]):  # Top 5 para debug
+                        text = r.get("text", "")
+                        sim = r.get("similarity", 0)
+                        match = re.search(r'"produto":\s*"([^"]+)"', text)
+                        nome = match.group(1) if match else text[:40]
+                        cat_match = re.search(r'"categoria1":\s*"([^"]+)"', text)
+                        cat = cat_match.group(1) if cat_match else ""
+                        logger.debug(f"   {i+1}. [{sim:.4f}] {nome} | {cat}")
+                
                 if not results:
                     return "Nenhum produto encontrado com esse termo."
                 
