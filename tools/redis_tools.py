@@ -273,6 +273,7 @@ def mark_order_sent(telefone: str, order_id: str = None) -> bool:
     """
     Marca o pedido como enviado. 
     Atualiza TTL para 15 minutos (janela de alteração).
+    Também marca flag de pedido completado (2h TTL) para evitar mensagem de "não finalizado".
     """
     client = get_redis_client()
     if client is None:
@@ -290,6 +291,12 @@ def mark_order_sent(telefone: str, order_id: str = None) -> bool:
         session["order_id"] = order_id
         
         client.set(key, json.dumps(session), ex=MODIFICATION_TTL)
+        
+        # Marcar que pedido foi completado (TTL 2 horas)
+        # Isso evita a mensagem "pedido não finalizado" quando cliente voltar
+        completed_key = f"order_completed:{telefone}"
+        client.set(completed_key, "1", ex=7200)  # 2 horas
+        
         logger.info(f"✅ Pedido marcado como enviado para {telefone} (TTL modificação: {MODIFICATION_TTL//60}min)")
         return True
     except Exception as e:
@@ -322,33 +329,33 @@ def get_order_context(telefone: str) -> str:
     client = get_redis_client()
     session = get_order_session(telefone)
     
-    # Chave para rastrear se cliente já teve pedido recente
-    history_key = f"order_history:{telefone}"
+    # Chave para rastrear se o ÚLTIMO pedido foi finalizado
+    completed_key = f"order_completed:{telefone}"
     
     if session is None:
-        # Verificar se tinha sessão anterior (expirou)
-        had_previous = False
+        # Verificar se o último pedido foi finalizado
+        was_completed = False
         if client:
             try:
-                had_previous = client.get(history_key) is not None
+                was_completed = client.get(completed_key) is not None
             except:
                 pass
         
         # Iniciar nova sessão
         start_order_session(telefone)
         
-        # Marcar que cliente tem histórico (TTL de 2 horas)
-        if client:
+        # Limpar flag de pedido completado para próximo ciclo
+        if client and was_completed:
             try:
-                client.set(history_key, "1", ex=7200)  # 2 horas
+                client.delete(completed_key)
             except:
                 pass
         
-        if had_previous:
-            # Sessão expirou - avisar o agente
-            return "[SESSÃO] Sessão anterior expirou (40min). Novo pedido iniciado. Avise o cliente que o pedido anterior não foi finalizado e pergunte se quer começar um novo."
+        if was_completed:
+            # Pedido anterior FOI finalizado - iniciar novo normalmente
+            return "[SESSÃO] Novo pedido iniciado. Cliente já fez pedido anteriormente."
         else:
-            # Conversa nova
+            # Conversa nova ou sessão expirou SEM finalizar
             return "[SESSÃO] Nova conversa. Monte o pedido normalmente."
     
     status = session.get("status", "building")
@@ -359,7 +366,7 @@ def get_order_context(telefone: str) -> str:
         return ""
     
     elif status == "sent":
-        # Pedido já foi enviado - está na janela de modificação
+        # Pedido já foi enviado - está na janela de modificação (15min)
         return "[SESSÃO] Pedido já enviado. Se cliente quiser adicionar algo, use alterar_tool."
     
     return ""
