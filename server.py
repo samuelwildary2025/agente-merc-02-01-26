@@ -710,6 +710,13 @@ async def webhook(req: Request, tasks: BackgroundTasks):
         active, _ = is_agent_in_cooldown(num)
         if active:
             push_message_to_buffer(num, txt)
+            # SALVAR MENSAGEM DO CLIENTE NO HISTÓRICO mesmo durante cooldown
+            try:
+                from langchain_core.messages import HumanMessage
+                get_session_history(tel).add_message(HumanMessage(content=txt))
+                logger.info(f"📝 Mensagem do cliente salva no histórico (cooldown ativo)")
+            except Exception as e:
+                logger.warning(f"Erro ao salvar mensagem durante cooldown: {e}")
             return JSONResponse(content={"status":"cooldown"})
 
         try:
