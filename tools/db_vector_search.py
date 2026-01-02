@@ -72,11 +72,41 @@ def search_products_vector(query: str, limit: int = 20) -> str:
     if not query:
         return "Nenhum termo de busca informado."
     
-    logger.info(f"🔍 [VECTOR SEARCH] Buscando: '{query}'")
+    # Lista de produtos que são tipicamente hortifruti (frutas, legumes, verduras)
+    # Quando detectamos um desses, adicionamos contexto para melhorar a busca
+    HORTIFRUTI_KEYWORDS = [
+        "tomate", "cebola", "batata", "alface", "cenoura", "pepino", "pimentao",
+        "abobora", "abobrinha", "berinjela", "beterraba", "brocolis", "couve",
+        "espinafre", "repolho", "rucula", "agriao", "alho", "gengibre", "mandioca",
+        "banana", "maca", "laranja", "limao", "abacaxi", "melancia", "melao",
+        "uva", "morango", "manga", "mamao", "abacate", "goiaba", "pera", "pessego",
+        "ameixa", "kiwi", "coco", "maracuja", "acerola", "caju", "pitanga",
+        "cheiro verde", "coentro", "salsa", "cebolinha", "hortela", "manjericao",
+        "alecrim", "tomilho", "oregano", "louro", "frango", "carne", "peixe",
+        "ovo", "leite", "queijo", "manteiga", "iogurte"
+    ]
+    
+    query_lower = query.lower()
+    enhanced_query = query
+    
+    # Se a busca é por um produto hortifruti, adiciona contexto para melhorar a relevância
+    for keyword in HORTIFRUTI_KEYWORDS:
+        if keyword in query_lower:
+            # Adiciona contexto de categoria para melhorar a similaridade
+            if keyword in ["frango", "carne", "peixe"]:
+                enhanced_query = f"{query} açougue carnes"
+            elif keyword in ["ovo", "leite", "queijo", "manteiga", "iogurte"]:
+                enhanced_query = f"{query} laticínios"
+            else:
+                enhanced_query = f"{query} hortifruti legumes verduras frutas"
+            logger.info(f"🎯 [BOOST] Query melhorada: '{enhanced_query}'")
+            break
+    
+    logger.info(f"🔍 [VECTOR SEARCH] Buscando: '{query}'" + (f" → '{enhanced_query}'" if enhanced_query != query else ""))
     
     try:
-        # 1. Gerar embedding da query
-        query_embedding = _generate_embedding(query)
+        # 1. Gerar embedding da query (com boost se aplicável)
+        query_embedding = _generate_embedding(enhanced_query)
         logger.info(f"✅ Embedding gerado ({len(query_embedding)} dimensões)")
         
         # 2. Buscar no banco por similaridade
