@@ -102,6 +102,16 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "muçarela": "queijo mussarela", 
         "mussarela": "queijo mussarela",
         "presunto": "presunto fatiado",
+        # Biscoitos e bolachas
+        "creme crack": "bolacha cream cracker",
+        "cream crack": "bolacha cream cracker",
+        "cracker": "bolacha cream cracker",
+        # Refrigerantes
+        "guarana": "refrig guarana antarctica",
+        "coca cola": "refrig coca cola",
+        "coca-cola": "refrig coca cola",
+        "fanta": "refrig fanta",
+        "sprite": "refrig sprite",
     }
     
     query_lower = query.lower()
