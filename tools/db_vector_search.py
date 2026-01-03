@@ -86,8 +86,28 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "ovo", "leite", "queijo", "manteiga", "iogurte"
     ]
     
+    # Traduções de termos comuns para abreviações usadas no banco
+    TERM_TRANSLATIONS = {
+        "absorvente": "abs",
+        "achocolatado": "achoc",
+        "refrigerante": "refrig",
+        "amaciante": "amac",
+        "desodorante": "desod",
+        "shampoo": "sh",
+        "condicionador": "cond",
+    }
+    
     query_lower = query.lower()
     enhanced_query = query
+    
+    # Primeiro, aplicar traduções de termos
+    for term, abbreviation in TERM_TRANSLATIONS.items():
+        if term in query_lower:
+            enhanced_query = query.replace(term, abbreviation).replace(term.capitalize(), abbreviation.upper())
+            # Manter o termo original também para ajudar no contexto
+            enhanced_query = f"{abbreviation} {query}"
+            logger.info(f"🔄 [TRADUÇÃO] '{term}' → '{abbreviation}'")
+            break
     
     # Se a busca é por um produto hortifruti, adiciona contexto para melhorar a relevância
     for keyword in HORTIFRUTI_KEYWORDS:
