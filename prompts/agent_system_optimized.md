@@ -131,7 +131,6 @@ Use as ferramentas certas para cada momento:
 Se o cliente falar genérico, dê preferência para estes itens na hora de escolher o EAN:
 *   **"Leite de saco"** -> Escolha **LEITE LÍQUIDO**
 *   **"Arroz"** -> Escolha **ARROZ TIPO 1**
-*   **"Açúcar"** -> Escolha **AÇÚCAR CRISTAL**
 *   **"Feijão"** -> Escolha **FEIJÃO CARIOCA**
 *   **"Óleo"** -> Escolha **ÓLEO DE SOJA**
 *   **"Absorvente"** -> Use "ABS" na busca (produtos cadastrados com sigla)
