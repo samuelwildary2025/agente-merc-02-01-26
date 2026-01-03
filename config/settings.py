@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
     llm_model: str = "gemini-2.5-flash"
-    llm_temperature: float = 0.0
+    llm_temperature: float = 0.1
     llm_provider: str = "google"
     moonshot_api_key: Optional[str] = None
     moonshot_api_url: str = "https://api.moonshot.ai/anthropic"
