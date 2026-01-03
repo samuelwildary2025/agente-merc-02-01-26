@@ -275,7 +275,7 @@ def load_system_prompt() -> str:
         raise
 
 def _build_llm():
-    model = getattr(settings, "llm_model", "gemini-2.5-flash-lite")
+    model = getattr(settings, "llm_model", "gemini-2.5-flash")
     temp = float(getattr(settings, "llm_temperature", 0.0))
     provider = getattr(settings, "llm_provider", "google")
     

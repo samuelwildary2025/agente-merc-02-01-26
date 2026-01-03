@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # LLM Provider (openai ou google)
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
-    llm_model: str = "gemini-2.0-flash-lite"
+    llm_model: str = "gemini-2.5-flash"
     llm_temperature: float = 0.0
     llm_provider: str = "google"
     moonshot_api_key: Optional[str] = None
