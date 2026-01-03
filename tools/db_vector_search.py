@@ -117,17 +117,24 @@ def search_products_vector(query: str, limit: int = 20) -> str:
             break
     
     # Se a busca é por um produto hortifruti, adiciona contexto para melhorar a relevância
-    for keyword in HORTIFRUTI_KEYWORDS:
-        if keyword in query_lower:
-            # Adiciona contexto de categoria para melhorar a similaridade
-            if keyword in ["frango", "carne", "peixe"]:
-                enhanced_query = f"{query} açougue carnes"
-            elif keyword in ["ovo", "leite", "queijo", "manteiga", "iogurte"]:
-                enhanced_query = f"{query} laticínios"
-            else:
-                enhanced_query = f"{query} hortifruti legumes verduras frutas"
-            logger.info(f"🎯 [BOOST] Query melhorada: '{enhanced_query}'")
-            break
+    # MAS: Se a busca contém termos de produtos processados, NÃO aplicar boost de hortifruti
+    PROCESSED_TERMS = ["doce", "suco", "molho", "extrato", "polpa", "geleia", "compota"]
+    is_processed = any(term in query_lower for term in PROCESSED_TERMS)
+    
+    if not is_processed:
+        for keyword in HORTIFRUTI_KEYWORDS:
+            if keyword in query_lower:
+                # Adiciona contexto de categoria para melhorar a similaridade
+                if keyword in ["frango", "carne", "peixe"]:
+                    enhanced_query = f"{query} açougue carnes"
+                elif keyword in ["ovo", "leite", "queijo", "manteiga", "iogurte"]:
+                    enhanced_query = f"{query} laticínios"
+                else:
+                    enhanced_query = f"{query} hortifruti legumes verduras frutas"
+                logger.info(f"🎯 [BOOST] Query melhorada: '{enhanced_query}'")
+                break
+    else:
+        logger.info(f"⏭️ [BOOST SKIP] Produto processado detectado, pulando boost hortifruti")
     
     logger.info(f"🔍 [VECTOR SEARCH] Buscando: '{query}'" + (f" → '{enhanced_query}'" if enhanced_query != query else ""))
     
