@@ -157,22 +157,24 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                 # Converter embedding para string no formato pgvector
                 embedding_str = f"[{','.join(map(str, query_embedding))}]"
                 
-                # 🔥 BUSCA HÍBRIDA: Usa função hybrid_search do PostgreSQL
-                # Combina Full-Text Search (FTS) + Vetorial com RRF (Reciprocal Rank Fusion)
-                # - full_text_weight: peso da busca por texto (1.5 = prioriza matches exatos)
-                # - semantic_weight: peso da busca vetorial (1.0 = peso normal)
+                # 🔥 BUSCA HÍBRIDA V2: FTS + Vetorial + Boost para HORTI-FRUTI/FRIGORIFICO
+                # Usa RRF (Reciprocal Rank Fusion) para combinar rankings
+                # - full_text_weight: peso da busca por texto
+                # - semantic_weight: peso da busca vetorial
+                # - setor_boost: +0.5 para HORTI-FRUTI e FRIGORIFICO
                 sql = """
                     SELECT 
                         h.text,
                         h.metadata,
                         h.score as similarity,
                         h.rank
-                    FROM hybrid_search(
+                    FROM hybrid_search_v2(
                         %s,                    -- query_text
                         %s::vector,            -- query_embedding
                         %s,                    -- match_count
-                        1.5,                   -- full_text_weight (prioriza matches de texto)
+                        1.0,                   -- full_text_weight
                         1.0,                   -- semantic_weight
+                        0.5,                   -- setor_boost (HORTI-FRUTI/FRIGORIFICO)
                         50                     -- rrf_k (parâmetro RRF)
                     ) h
                 """
