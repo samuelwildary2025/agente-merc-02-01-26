@@ -165,6 +165,30 @@ O sistema traduz termos comuns para melhorar a busca:
 
 ---
 
+## ⚠️ Configuração Importante: Acentos
+
+> **ATENÇÃO PARA NOVOS CLIENTES:** Se o banco de dados do cliente **NÃO TEM ACENTOS** nos nomes dos produtos (comum em sistemas legados/ERPs), é necessário informar isso no prompt do agente.
+
+### Adicione no prompt:
+```markdown
+> ⚠️ **BUSCAS SEM ACENTO:** O banco de dados **NÃO TEM ACENTOS**. 
+> Sempre busque removendo acentos e cedilhas:
+> - açúcar → acucar
+> - café → cafe
+> - feijão → feijao
+> - maçã → maca
+```
+
+### Ou adicione traduções no código (`db_vector_search.py`):
+```python
+TERM_TRANSLATIONS = {
+    "açúcar": "acucar cristal",
+    "café": "cafe",
+    "feijão": "feijao",
+    # ...
+}
+```
+
 ## 📈 Métricas e Custos
 
 ### Custo por Interação (estimado)
