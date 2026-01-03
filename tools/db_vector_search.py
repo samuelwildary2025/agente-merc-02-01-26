@@ -112,8 +112,8 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         # 2. Buscar no banco por similaridade
         with psycopg2.connect(conn_str) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Busca por cosine similarity com BOOST para HORTI-FRUTI
-                # Produtos de hortifruti/legumes recebem +0.15 no score
+                # Busca por cosine similarity com BOOST para HORTI-FRUTI e FRIGORIFICO
+                # Produtos de hortifruti/carnes recebem +0.15 no score
                 sql = """
                     SELECT 
                         text,
@@ -121,15 +121,21 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         1 - (embedding <=> %s::vector) as base_similarity,
                         CASE 
                             WHEN metadata->>'setor' = 'HORTI-FRUTI' THEN 0.15
+                            WHEN metadata->>'setor' = 'FRIGORIFICO' THEN 0.15
                             WHEN metadata->>'categoria' ILIKE '%%LEGUMES%%' THEN 0.10
                             WHEN metadata->>'categoria' ILIKE '%%FRUTAS%%' THEN 0.10
+                            WHEN metadata->>'categoria' ILIKE '%%BOVINOS%%' THEN 0.10
+                            WHEN metadata->>'categoria' ILIKE '%%SUINOS%%' THEN 0.10
                             ELSE 0
                         END as horti_boost,
                         (1 - (embedding <=> %s::vector)) + 
                         CASE 
                             WHEN metadata->>'setor' = 'HORTI-FRUTI' THEN 0.15
+                            WHEN metadata->>'setor' = 'FRIGORIFICO' THEN 0.15
                             WHEN metadata->>'categoria' ILIKE '%%LEGUMES%%' THEN 0.10
                             WHEN metadata->>'categoria' ILIKE '%%FRUTAS%%' THEN 0.10
+                            WHEN metadata->>'categoria' ILIKE '%%BOVINOS%%' THEN 0.10
+                            WHEN metadata->>'categoria' ILIKE '%%SUINOS%%' THEN 0.10
                             ELSE 0
                         END as similarity
                     FROM produtos_vectors_ean
