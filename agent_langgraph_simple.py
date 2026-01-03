@@ -136,11 +136,20 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
         quantidade = item.get("quantidade", 1.0)
         total += preco * quantidade
         
-        # Formatar item para API (campos corretos)
+        # Formatar item para API (API requer quantidade como INT)
+        nome_produto = item.get("produto", item.get("nome_produto", "Produto"))
+        
+        # Se quantidade é fracionária (kg), incluir peso no nome e usar quantidade=1
+        if quantidade < 1 or quantidade != int(quantidade):
+            nome_produto = f"{nome_produto} ({quantidade:.3f}kg)"
+            qtd_api = 1  # API requer int
+        else:
+            qtd_api = int(quantidade)
+        
         itens_formatados.append({
-            "nome_produto": item.get("produto", item.get("nome_produto", "Produto")),
-            "quantidade": round(quantidade, 3),  # Manter float para produtos pesados (kg)
-            "preco_unitario": preco
+            "nome_produto": nome_produto,
+            "quantidade": qtd_api,
+            "preco_unitario": round(preco * quantidade / qtd_api, 2)  # Preço ajustado
         })
         
     # 3. Montar payload do pedido (campos corretos para API)
