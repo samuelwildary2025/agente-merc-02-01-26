@@ -151,46 +151,35 @@ def search_products_vector(query: str, limit: int = 20) -> str:
     try:
         # 1. Gerar embedding da query (com boost se aplicável)
         query_embedding = _generate_embedding(enhanced_query)
-        logger.info(f"✅ Embedding gerado ({len(query_embedding)} dimensões)")
-        
-        # 2. Buscar no banco por similaridade
+        # 2. BUSCA HÍBRIDA usando função PostgreSQL (FTS + Vetorial com RRF)
         with psycopg2.connect(conn_str) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Busca por cosine similarity com BOOST para HORTI-FRUTI e FRIGORIFICO
-                # Produtos de hortifruti/carnes recebem +0.15 no score
-                sql = """
-                    SELECT 
-                        text,
-                        metadata,
-                        1 - (embedding <=> %s::vector) as base_similarity,
-                        CASE 
-                            WHEN metadata->>'setor' = 'HORTI-FRUTI' THEN 0.15
-                            WHEN metadata->>'setor' = 'FRIGORIFICO' THEN 0.15
-                            WHEN metadata->>'categoria' ILIKE '%%LEGUMES%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%FRUTAS%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%BOVINOS%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%SUINOS%%' THEN 0.10
-                            ELSE 0
-                        END as horti_boost,
-                        (1 - (embedding <=> %s::vector)) + 
-                        CASE 
-                            WHEN metadata->>'setor' = 'HORTI-FRUTI' THEN 0.15
-                            WHEN metadata->>'setor' = 'FRIGORIFICO' THEN 0.15
-                            WHEN metadata->>'categoria' ILIKE '%%LEGUMES%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%FRUTAS%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%BOVINOS%%' THEN 0.10
-                            WHEN metadata->>'categoria' ILIKE '%%SUINOS%%' THEN 0.10
-                            ELSE 0
-                        END as similarity
-                    FROM produtos_vectors_ean
-                    ORDER BY similarity DESC
-                    LIMIT %s
-                """
-                
                 # Converter embedding para string no formato pgvector
                 embedding_str = f"[{','.join(map(str, query_embedding))}]"
                 
-                cur.execute(sql, (embedding_str, embedding_str, limit))
+                # 🔥 BUSCA HÍBRIDA: Usa função hybrid_search do PostgreSQL
+                # Combina Full-Text Search (FTS) + Vetorial com RRF (Reciprocal Rank Fusion)
+                # - full_text_weight: peso da busca por texto (1.5 = prioriza matches exatos)
+                # - semantic_weight: peso da busca vetorial (1.0 = peso normal)
+                sql = """
+                    SELECT 
+                        h.text,
+                        h.metadata,
+                        h.score as similarity,
+                        h.rank
+                    FROM hybrid_search(
+                        %s,                    -- query_text
+                        %s::vector,            -- query_embedding
+                        %s,                    -- match_count
+                        1.5,                   -- full_text_weight (prioriza matches de texto)
+                        1.0,                   -- semantic_weight
+                        50                     -- rrf_k (parâmetro RRF)
+                    ) h
+                """
+                
+                logger.info(f"🔀 [HYBRID SEARCH] Query: '{query}' → '{enhanced_query}'")
+                
+                cur.execute(sql, (enhanced_query, embedding_str, limit))
                 results = cur.fetchall()
                 
                 logger.info(f"🔍 [VECTOR SEARCH] Encontrados {len(results)} resultados")
