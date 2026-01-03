@@ -47,19 +47,32 @@ def estoque_tool(url: str) -> str:
     return estoque(url)
 
 @tool
-def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observacao: str = "", preco: float = 0.0) -> str:
+def add_item_tool(telefone: str, produto: str, quantidade: float = 1.0, observacao: str = "", preco: float = 0.0, unidades: int = 0) -> str:
     """
     Adicionar um item ao carrinho de compras do cliente.
     USAR IMEDIATAMENTE quando o cliente demonstrar intenção de compra.
+    
+    Para produtos vendidos por KG (frutas, legumes, carnes):
+    - quantidade: peso em kg (ex: 0.45 para 450g)
+    - unidades: número de unidades pedidas (ex: 3 para 3 tomates)
+    - preco: preço por kg
+    
+    Para produtos unitários:
+    - quantidade: número de itens
+    - unidades: deixar 0
+    - preco: preço por unidade
     """
     item = {
         "produto": produto,
-        "quantidade": quantidade,
+        "quantidade": quantidade,  # Peso em kg OU quantidade de unidades
+        "unidades": unidades,      # Número de unidades (se aplicável)
         "observacao": observacao,
-        "preco": preco
+        "preco": preco            # Preço por kg OU por unidade
     }
     import json as json_lib
     if add_item_to_cart(telefone, json_lib.dumps(item, ensure_ascii=False)):
+        if unidades > 0:
+            return f"✅ Item '{produto}' ({unidades} unidades, ~{quantidade:.3f}kg) adicionado ao carrinho."
         return f"✅ Item '{produto}' ({quantidade}) adicionado ao carrinho."
     return "❌ Erro ao adicionar item. Tente novamente."
 
@@ -134,22 +147,33 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
     for item in items:
         preco = item.get("preco", 0.0)
         quantidade = item.get("quantidade", 1.0)
+        unidades = item.get("unidades", 0)
+        obs_item = item.get("observacao", "")
         total += preco * quantidade
         
-        # Formatar item para API (API requer quantidade como INT)
         nome_produto = item.get("produto", item.get("nome_produto", "Produto"))
         
-        # Se quantidade é fracionária (kg), incluir peso no nome e usar quantidade=1
-        if quantidade < 1 or quantidade != int(quantidade):
-            nome_produto = f"{nome_produto} ({quantidade:.3f}kg)"
-            qtd_api = 1  # API requer int
+        # Se tem unidades, é produto pesado (tomate, cebola, etc)
+        if unidades > 0:
+            qtd_api = unidades
+            valor_estimado = round(preco * quantidade, 2)
+            obs_peso = f"Peso estimado: {quantidade:.3f}kg (~R${valor_estimado:.2f}). PESAR para confirmar valor."
+            if obs_item:
+                obs_item = f"{obs_item}. {obs_peso}"
+            else:
+                obs_item = obs_peso
         else:
-            qtd_api = int(quantidade)
+            # Produto unitário normal
+            if quantidade < 1 or quantidade != int(quantidade):
+                qtd_api = 1
+            else:
+                qtd_api = int(quantidade)
         
         itens_formatados.append({
             "nome_produto": nome_produto,
             "quantidade": qtd_api,
-            "preco_unitario": round(preco * quantidade / qtd_api, 2)  # Preço ajustado
+            "preco_unitario": round(preco, 2),
+            "observacao": obs_item
         })
         
     # 3. Montar payload do pedido (campos corretos para API)
