@@ -207,6 +207,38 @@ def search_products_vector(query: str, limit: int = 20) -> str:
                         cat = cat_match.group(1) if cat_match else ""
                         logger.debug(f"   {i+1}. [{sim:.4f}] {nome} | {cat}")
                 
+                # 🔄 RETRY AUTOMÁTICO: Se o melhor score for muito baixo, tentar com palavras individuais
+                MIN_SCORE_THRESHOLD = 0.50
+                if results and results[0].get("similarity", 0) < MIN_SCORE_THRESHOLD:
+                    logger.info(f"⚠️ [RETRY] Score baixo ({results[0].get('similarity', 0):.3f}), tentando busca por palavras individuais")
+                    
+                    # Dividir query em palavras (ignorar palavras muito curtas e stop words)
+                    STOP_WORDS = {"de", "da", "do", "para", "com", "sem", "um", "uma", "kg", "und", "pct"}
+                    words = [w for w in query.lower().split() if len(w) >= 3 and w not in STOP_WORDS]
+                    
+                    if len(words) >= 1:
+                        best_results = results  # Manter resultados originais como fallback
+                        best_score = results[0].get("similarity", 0)
+                        
+                        # Tentar cada palavra individual
+                        for word in words:
+                            # Gerar embedding para a palavra individual
+                            word_embedding = _generate_embedding(word)
+                            word_embedding_str = f"[{','.join(map(str, word_embedding))}]"
+                            
+                            cur.execute(sql, (word_embedding_str, word_embedding_str, limit))
+                            word_results = cur.fetchall()
+                            
+                            if word_results:
+                                word_score = word_results[0].get("similarity", 0)
+                                # Aceitar se score for significativamente melhor
+                                if word_score > best_score + 0.05:
+                                    logger.info(f"✅ [RETRY] Palavra '{word}' encontrou melhores resultados: {word_score:.3f}")
+                                    best_results = word_results
+                                    best_score = word_score
+                        
+                        results = best_results
+                
                 if not results:
                     return "Nenhum produto encontrado com esse termo."
                 
