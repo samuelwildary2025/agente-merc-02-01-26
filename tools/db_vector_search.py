@@ -112,6 +112,12 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "coca-cola": "refrig coca cola",
         "fanta": "refrig fanta",
         "sprite": "refrig sprite",
+        # Normalização de acentos (banco usa sem acento)
+        "açúcar": "acucar cristal",
+        "açucar": "acucar cristal",
+        "café": "cafe",
+        "maçã": "maca",
+        "feijão": "feijao",
     }
     
     query_lower = query.lower()
