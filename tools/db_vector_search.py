@@ -95,6 +95,11 @@ def search_products_vector(query: str, limit: int = 20) -> str:
         "desodorante": "desod",
         "shampoo": "sh",
         "condicionador": "cond",
+        "hotdog": "hot dog",
+        "musarela": "queijo mussarela",
+        "muçarela": "queijo mussarela", 
+        "mussarela": "queijo mussarela",
+        "presunto": "presunto fatiado",
     }
     
     query_lower = query.lower()
