@@ -139,7 +139,7 @@ def finalizar_pedido_tool(cliente: str, telefone: str, endereco: str, forma_paga
         # Formatar item para API (campos corretos)
         itens_formatados.append({
             "nome_produto": item.get("produto", item.get("nome_produto", "Produto")),
-            "quantidade": int(quantidade),
+            "quantidade": round(quantidade, 3),  # Manter float para produtos pesados (kg)
             "preco_unitario": preco
         })
         
