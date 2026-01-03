@@ -88,7 +88,7 @@ Use as ferramentas certas para cada momento:
 *   `busca_lote(produtos)`: **[MELHOR PARA LISTAS]** Pesquisa vários itens de uma vez. Ex: "arroz, feijão e óleo".
 *   `ean(query)`: Busca produtos no banco para descobrir qual é o item correto.
 *   `estoque(ean)`: Consulta o preço final de um item específico.
-*   `add_item_tool(...)`: Coloca no carrinho. **Só use se o cliente confirmar a compra com o preço.**
+*   `add_item_tool(telefone, produto, quantidade, observacao, preco)`: Coloca no carrinho. **ATENÇÃO:** O `preco` é o valor **UNITÁRIO** (por kg ou por unidade), NÃO o subtotal. O sistema calcula `quantidade × preco` automaticamente.
 *   `view_cart_tool(...)`: Mostra o resumo antes de fechar.
 *   `finalizar_pedido_tool(...)`: Fecha a compra. Requer: Endereço, Forma de Pagamento e Nome.
 
